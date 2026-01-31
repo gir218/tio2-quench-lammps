@@ -1,0 +1,49 @@
+# TIO2 MELT QUENCH
+
+variable runString string hot_npt
+
+units             real
+dimension         3
+atom_style        charge
+
+boundary p p p
+read_data         hot_nvt.data
+
+pair_style buck/coul/long 10.0
+pair_coeff 2 2 717654 0.154 120.997
+pair_coeff 1 2 391053 0.194 290.392
+pair_coeff 1 1 271719 0.234 696.941
+
+kspace_style      ewald 1.0e-4
+
+#fix               F1 all nve
+fix               F2 all npt temp 3000.0 3000.0 $(100*dt) iso 0 0 $(100*dt)
+#fix               F3 all nvt temp 3000.0 3000.0 $(100*dt)
+#fix               F4 all temp/rescale 1 10.0 10.0 5.0 1.0
+
+#velocity          all create 800.0 97475745 dist gaussian
+
+group Ti type 2
+group O type 1
+
+#compute TiMSD Ti msd com yes average no
+#compute OMSD O msd com yes average no
+#fix 1 Ti ave/time 1 1 200 c_TiMSD[*] file ${runString}.msdTi mode vector
+#fix 2 O ave/time 1 1 200 c_OMSD[*] file ${runString}.msdO mode vector
+
+
+neighbor          0.3 bin
+neigh_modify      delay 0 every 1 check yes
+
+thermo            100
+thermo_style custom step temp pxx pyy pzz density pe
+
+dump D1 all custom 10000 ${runString}.dump id type x y z ix iy iz
+
+
+timestep          0.5
+run               400000
+
+#      minimize          1.0e-6 1.0e-3 1000 1000000
+
+write_data        ${runString}.data nocoeff
